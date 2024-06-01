@@ -29,7 +29,7 @@ namespace TodoAPI.Services
         {
             try
             {
-                var todo = _mapper.Map<Todo> (request);
+                var todo = _mapper.Map<Todo>(request);
                 todo.CreatedAt = DateTime.UtcNow;
                 _context.Todos.Add(todo);
                 await _context.SaveChangesAsync();
@@ -41,19 +41,38 @@ namespace TodoAPI.Services
             }
         }
 
-        public Task DeleteTodoAsync(Guid Id)
+        public async Task DeleteTodoAsync(Guid id)
         {
-            throw new NotImplementedException();
+
+            var todo = await _context.Todos.FindAsync(id);
+            if (todo != null)
+            {
+                _context.Todos.Remove(todo);
+                await _context.SaveChangesAsync();
+
+            }
+            else
+            {
+                throw new Exception($"No  item found with the id {id}");
+            }
+
+
         }
 
-        public Task<Todo> GetByIdAsync(Guid Id)
+        public async Task<Todo> GetByIdAsync(Guid Id)
         {
-            throw new NotImplementedException();
+            var todo = await _context.Todos.FindAsync(Id);
+            if (todo == null)
+            {
+                throw new KeyNotFoundException($"No todo item with Id: {Id} found");
+            }
+
+            return todo;
         }
 
         public async Task<IEnumerable<Todo>> GetAllAsync()
         {
-            var todo= await _context.Todos.ToListAsync();
+            var todo = await _context.Todos.ToListAsync();
             if (todo == null)
             {
                 throw new Exception(" No Todo items found");
@@ -62,9 +81,50 @@ namespace TodoAPI.Services
 
         }
 
-        public Task UpdateTodoAsync(Guid Id, UpdateTodoRequest request)
+        public async Task UpdateTodoAsync(Guid id, UpdateTodoRequest request)
         {
-            throw new NotImplementedException();
+            try
+            {
+                var todo = await _context.Todos.FindAsync(id);
+                if (todo == null)
+                {
+                    throw new Exception($"Todo item with id {id} not found.");
+                }
+
+                if (request.Title != null)
+                {
+                    todo.Title = request.Title;
+                }
+
+                if (request.Description != null)
+                {
+                    todo.Description = request.Description;
+                }
+
+                if (request.DueDate != null)
+                {
+                    todo.DueDate = request.DueDate.Value;
+                }
+
+                if (request.Priority != null)
+                {
+                    todo.Priority = request.Priority.Value;
+                }
+
+                if (request.IsComplete == true)
+                {
+                    todo.IsComplete = true;
+                }
+
+                todo.UpdatedAt = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"An error occurred while updating the todo item with id {id}.");
+                throw;
+            }
         }
     }
 }
